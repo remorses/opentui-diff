@@ -44,12 +44,12 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError && this.state.error) {
       return (
         <box style={{ flexDirection: "column", padding: 2 }}>
-          <text style={{ fg: "red" }}>
+          <text fg="red">
             <strong>Error occurred:</strong>
           </text>
           <text>{this.state.error.message}</text>
-          <text style={{ fg: "#666" }}>Stack trace (copied to clipboard):</text>
-          <text style={{ fg: "#999" }}>{this.state.error.stack}</text>
+          <text fg="brightBlack">Stack trace (copied to clipboard):</text>
+          <text fg="white">{this.state.error.stack}</text>
         </box>
       );
     }
@@ -116,7 +116,7 @@ export const FileEditPreview = ({
         if (i < hunks.length - 1) {
           elements.push(
             <box style={{ paddingLeft }} key={`ellipsis-${i}`}>
-              <text style={{ fg: "#999" }}>...</text>
+              <text fg="brightBlack">...</text>
             </box>,
           );
         }
@@ -193,17 +193,15 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
 
         // Create word-level diff display for removed line
         const removedContent = (
-          <box style={{ backgroundColor: "#ff000020" }}>
-            <text>
-              -
-              {wordDiff.map((part, idx) => {
-                if (part.removed) {
-                  return <strong key={`removed-${i}-${idx}`}>{part.value}</strong>;
-                }
-                return part.value;
-              })}
-            </text>
-          </box>
+          <text bg="red">
+            <span fg="brightRed">-</span>
+            {wordDiff.map((part, idx) => {
+              if (part.removed) {
+                return <span key={`removed-${i}-${idx}`} fg="white" bg="red">{part.value}</span>;
+              }
+              return part.value;
+            })}
+          </text>
         );
 
         result.push({ code: removedContent, type, lineNumber });
@@ -219,17 +217,15 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
 
         // Create word-level diff display for added line
         const addedContent = (
-          <box style={{ backgroundColor: "#00ff0020" }}>
-            <text>
-              +
-              {wordDiff.map((part, idx) => {
-                if (part.added) {
-                  return <strong key={`added-${i}-${idx}`}>{part.value}</strong>;
-                }
-                return part.value;
-              })}
-            </text>
-          </box>
+          <text bg="green">
+            <span fg="brightGreen">+</span>
+            {wordDiff.map((part, idx) => {
+              if (part.added) {
+                return <span key={`added-${i}-${idx}`} fg="white" bg="green">{part.value}</span>;
+              }
+              return part.value;
+            })}
+          </text>
         );
 
         result.push({ code: addedContent, type, lineNumber });
@@ -237,16 +233,12 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
         // Regular line without word-level diff
         const content =
           type === "add" || type === "remove" ? (
-            <box
-              style={{
-                backgroundColor: type === "add" ? "#00ff0020" : "#ff000020",
-              }}
-            >
-              <text>
+            <text bg={type === "add" ? "green" : "red"}>
+              <span fg={type === "add" ? "brightGreen" : "brightRed"}>
                 {type === "add" ? "+" : "-"}
-                {code}
-              </text>
-            </box>
+              </span>
+              {code}
+            </text>
           ) : (
             <text> {code}</text>
           );
@@ -278,7 +270,7 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
     <>
       {diff.map(({ lineNumber, code, key }) => (
         <box key={key} style={{ flexDirection: "row" }}>
-          <text style={{ fg: "#999" }}>{lineNumber} </text>
+          <text fg="brightBlack">{lineNumber} </text>
           {code}
         </box>
       ))}
