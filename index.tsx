@@ -1,9 +1,16 @@
-import { TextAttributes } from "@opentui/core";
+import { TextAttributes, RGBA } from "@opentui/core";
 import { structuredPatch } from "diff";
 import { render } from "@opentui/react";
+
 import * as React from "react";
 
 import { type StructuredPatchHunk as Hunk, diffWordsWithSpace } from "diff";
+
+// Color constants for diff display
+const REMOVED_BG_LIGHT = RGBA.fromInts(255, 0, 0, 32); // Light red with transparency (32/255 = ~12.5% opacity)
+const REMOVED_BG_DARK = RGBA.fromInts(255, 0, 0, 96); // Darker red for emphasis (96/255 = ~37.5% opacity)
+const ADDED_BG_LIGHT = RGBA.fromInts(0, 255, 0, 32); // Light green with transparency
+const ADDED_BG_DARK = RGBA.fromInts(0, 255, 0, 96); // Darker green for emphasis
 
 // Custom error boundary class
 class ErrorBoundary extends React.Component<
@@ -193,11 +200,15 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
 
         // Create word-level diff display for removed line
         const removedContent = (
-          <text bg="red">
-            <span fg="brightRed">-</span>
+          <text bg={REMOVED_BG_LIGHT}>
+            <span fg="red">-</span>
             {wordDiff.map((part, idx) => {
               if (part.removed) {
-                return <span key={`removed-${i}-${idx}`} fg="white" bg="red">{part.value}</span>;
+                return (
+                  <span key={`removed-${i}-${idx}`} bg={REMOVED_BG_DARK}>
+                    {part.value}
+                  </span>
+                );
               }
               return part.value;
             })}
@@ -217,11 +228,15 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
 
         // Create word-level diff display for added line
         const addedContent = (
-          <text bg="green">
-            <span fg="brightGreen">+</span>
+          <text bg={ADDED_BG_LIGHT}>
+            <span fg="green">+</span>
             {wordDiff.map((part, idx) => {
               if (part.added) {
-                return <span key={`added-${i}-${idx}`} fg="white" bg="green">{part.value}</span>;
+                return (
+                  <span key={`added-${i}-${idx}`} bg={ADDED_BG_DARK}>
+                    {part.value}
+                  </span>
+                );
               }
               return part.value;
             })}
@@ -233,8 +248,8 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
         // Regular line without word-level diff
         const content =
           type === "add" || type === "remove" ? (
-            <text bg={type === "add" ? "green" : "red"}>
-              <span fg={type === "add" ? "brightGreen" : "brightRed"}>
+            <text bg={type === "add" ? ADDED_BG_LIGHT : REMOVED_BG_LIGHT}>
+              <span fg={type === "add" ? "green" : "red"}>
                 {type === "add" ? "+" : "-"}
               </span>
               {code}
@@ -344,6 +359,7 @@ function App() {
   return (
     <box style={{ flexDirection: "column", padding: 2 }}>
       <FileEditPreviewTitle filePath={filePath} hunks={hunks} />
+      <box paddingTop={1} />
       <FileEditPreview hunks={hunks} paddingLeft={0} />
     </box>
   );
