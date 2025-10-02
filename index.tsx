@@ -195,14 +195,12 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
         const removedContent = (
           <box style={{ backgroundColor: "#ff000020" }}>
             <text>
-              <span>-</span>
+              -
               {wordDiff.map((part, idx) => {
                 if (part.removed) {
-                  return (
-                    <strong key={`removed-${i}-${idx}`}>{part.value}</strong>
-                  );
+                  return <strong key={`removed-${i}-${idx}`}>{part.value}</strong>;
                 }
-                return <span key={`unchanged-${i}-${idx}`}>{part.value}</span>;
+                return part.value;
               })}
             </text>
           </box>
@@ -223,14 +221,12 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
         const addedContent = (
           <box style={{ backgroundColor: "#00ff0020" }}>
             <text>
-              <span>+</span>
+              +
               {wordDiff.map((part, idx) => {
                 if (part.added) {
-                  return (
-                    <strong key={`added-${i}-${idx}`}>{part.value}</strong>
-                  );
+                  return <strong key={`added-${i}-${idx}`}>{part.value}</strong>;
                 }
-                return <span key={`unchanged-${i}-${idx}`}>{part.value}</span>;
+                return part.value;
               })}
             </text>
           </box>
@@ -247,7 +243,7 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
               }}
             >
               <text>
-                <span>{type === "add" ? "+" : "-"}</span>
+                {type === "add" ? "+" : "-"}
                 {code}
               </text>
             </box>
@@ -269,20 +265,22 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
     return result.map(({ type, code, lineNumber }, index) => {
       const lineNumberText = lineNumber.toString().padStart(maxWidth);
 
-      return (
-        <text key={`line-${index}`}>
-          <span style={{ fg: "#999" }}>{lineNumberText} </span>
-          {code}
-        </text>
-      );
+      return {
+        lineNumber: lineNumberText,
+        code,
+        key: `line-${index}`,
+      };
     });
   };
 
   const diff = formatDiff(patch.lines, patch.oldStart);
   return (
     <>
-      {diff.map((line, i) => (
-        <box key={i}>{line}</box>
+      {diff.map(({ lineNumber, code, key }) => (
+        <box key={key} style={{ flexDirection: "row" }}>
+          <text style={{ fg: "#999" }}>{lineNumber} </text>
+          {code}
+        </box>
       ))}
     </>
   );
