@@ -36,3 +36,18 @@ Try to never use useEffect if possible. usually you can move logic directly in e
     this.privateMethod = this.privateMethod.bind(this)
   }
   ```
+
+## reading github repositories
+
+you can use gitchamber.com to read repo files. run `curl https://gitchamber.com` to see how the API works. always use curl to fetch the responses of gitchamber.com
+
+for example when working with the vercel ai sdk, you can fetch the latest docs using:
+
+https://gitchamber.com/repos/repos/vercel/ai/main/files
+
+use gitchamber to read the .md files using curl
+
+
+## researching opentui patterns
+
+you can read more examples of opentui react code using gitchamber and listing and reading files in https://github.com/sst/opentui/tree/main/packages/react/examples
