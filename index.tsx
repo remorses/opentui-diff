@@ -2,7 +2,7 @@ import { TextAttributes } from "@opentui/core";
 import { structuredPatch } from "diff";
 import { render } from "@opentui/react";
 
-import { StructuredPatchHunk as Hunk, diffWordsWithSpace } from "diff";
+import { type StructuredPatchHunk as Hunk, diffWordsWithSpace } from "diff";
 import * as React from "react";
 
 export const FileEditPreviewTitle = ({
@@ -302,11 +302,6 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
     </>
   );
 };
-
-
-
-
-
 
 // Example file content before and after
 const beforeContent = `import React from 'react'
