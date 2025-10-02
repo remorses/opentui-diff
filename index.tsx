@@ -1,9 +1,62 @@
 import { TextAttributes } from "@opentui/core";
 import { structuredPatch } from "diff";
 import { render } from "@opentui/react";
+import * as React from "react";
 
 import { type StructuredPatchHunk as Hunk, diffWordsWithSpace } from "diff";
-import * as React from "react";
+
+// Custom error boundary class
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+
+    // Bind methods
+    this.componentDidCatch = this.componentDidCatch.bind(this);
+  }
+
+  static getDerivedStateFromError(error: Error): {
+    hasError: boolean;
+    error: Error;
+  } {
+    return { hasError: true, error };
+  }
+
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    console.error("Error caught by boundary:", error);
+    console.error("Component stack:", errorInfo.componentStack);
+
+    // Copy stack trace to clipboard
+    const stackTrace = `${error.message}\n\nStack trace:\n${error.stack}\n\nComponent stack:\n${errorInfo.componentStack}`;
+    const { execSync } = require("child_process");
+    try {
+      execSync("pbcopy", { input: stackTrace });
+      console.log("Stack trace copied to clipboard");
+    } catch (copyError) {
+      console.error("Failed to copy to clipboard:", copyError);
+    }
+  }
+
+  override render(): any {
+    if (this.state.hasError && this.state.error) {
+      return (
+        <box style={{ flexDirection: "column", padding: 2 }}>
+          <text style={{ fg: "red" }}>
+            <strong>Error occurred:</strong>
+          </text>
+          <text>{this.state.error.message}</text>
+          <text style={{ fg: "#666" }}>Stack trace (copied to clipboard):</text>
+          <text style={{ fg: "#999" }}>{this.state.error.stack}</text>
+        </box>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export const FileEditPreviewTitle = ({
   filePath,
@@ -22,23 +75,23 @@ export const FileEditPreviewTitle = ({
   );
 
   return (
-    <Text>
-      Updated <Text bold>{filePath}</Text>
+    <text>
+      Updated <strong>{filePath}</strong>
       {numAdditions > 0 || numRemovals > 0 ? " with " : ""}
       {numAdditions > 0 ? (
         <>
-          <Text bold>{numAdditions}</Text>{" "}
+          <strong>{numAdditions}</strong>{" "}
           {numAdditions > 1 ? "additions" : "addition"}
         </>
       ) : null}
       {numAdditions > 0 && numRemovals > 0 ? " and " : null}
       {numRemovals > 0 ? (
         <>
-          <Text bold>{numRemovals}</Text>{" "}
+          <strong>{numRemovals}</strong>{" "}
           {numRemovals > 1 ? "removals" : "removal"}
         </>
       ) : null}
-    </Text>
+    </text>
   );
 };
 
@@ -50,109 +103,27 @@ export const FileEditPreview = ({
   paddingLeft?: number;
 }) => {
   return (
-    <Box flexDirection="column">
+    <box style={{ flexDirection: "column" }}>
       {hunks.flatMap((patch, i) => {
         const elements = [
-          <Box
-            flexDirection="column"
-            paddingLeft={paddingLeft}
+          <box
+            style={{ flexDirection: "column", paddingLeft }}
             key={patch.newStart}
           >
             <StructuredDiff patch={patch} />
-          </Box>,
+          </box>,
         ];
         if (i < hunks.length - 1) {
           elements.push(
-            <Box paddingLeft={paddingLeft} key={`ellipsis-${i}`}>
-              <Text color="secondaryText">...</Text>
-            </Box>,
+            <box style={{ paddingLeft }} key={`ellipsis-${i}`}>
+              <text style={{ fg: "#999" }}>...</text>
+            </box>,
           );
         }
         return elements;
       })}
-    </Box>
+    </box>
   );
-};
-
-// Simple React components to replace Ink's Box and Text
-const Box = ({
-  children,
-  flexDirection = "row" as "row" | "column",
-  paddingLeft = 0,
-  ...props
-}) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection,
-        paddingLeft: `${paddingLeft * 0.5}rem`,
-      }}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
-
-const Text = ({
-  children,
-  color,
-  backgroundColor,
-  bold,
-  type,
-  ...props
-}: {
-  children?: React.ReactNode;
-  color?: string;
-  backgroundColor?: string;
-  bold?: boolean;
-  type?: string;
-  [key: string]: any;
-}) => {
-  const style: React.CSSProperties = {};
-
-  // Use Tailwind's default color tokens
-  if (color === "error") style.color = "var(--color-red-500)";
-  if (color === "secondaryText") style.color = "var(--color-neutral-500)";
-
-  if (backgroundColor) {
-    // Use Tailwind color tokens with opacity via oklch
-    const bgColors = {
-      added: "oklch(from var(--color-green-500) l c h / 20%)",
-      addedLight: "oklch(from var(--color-green-500) l c h / 10%)",
-      removed: "oklch(from var(--color-red-500) l c h / 20%)",
-      removedLight: "oklch(from var(--color-red-500) l c h / 10%)",
-    };
-    style.backgroundColor = bgColors[backgroundColor];
-  }
-
-  if (bold) style.fontWeight = "bold";
-
-  return (
-    <span style={style} {...props}>
-      {children}
-    </span>
-  );
-};
-
-// Utility functions
-const wrapText = (text: string, width: number): string[] => {
-  if (text.length <= width) return [text];
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const char of text) {
-    if (currentLine.length >= width) {
-      lines.push(currentLine);
-      currentLine = char;
-    } else {
-      currentLine += char;
-    }
-  }
-
-  if (currentLine) lines.push(currentLine);
-  return lines;
 };
 
 // Helper function to get word-level diff
@@ -180,16 +151,16 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
     // Find pairs of removed/added lines for word-level diff
     const linePairs: Array<{ remove?: number; add?: number }> = [];
     for (let i = 0; i < processedLines.length; i++) {
-      if (processedLines[i].type === "remove") {
+      if (processedLines[i]?.type === "remove") {
         // Look ahead for corresponding add
         let j = i + 1;
         while (
           j < processedLines.length &&
-          processedLines[j].type === "remove"
+          processedLines[j]?.type === "remove"
         ) {
           j++;
         }
-        if (j < processedLines.length && processedLines[j].type === "add") {
+        if (j < processedLines.length && processedLines[j]?.type === "add") {
           linePairs.push({ remove: i, add: j });
         }
       }
@@ -197,62 +168,72 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
 
     let lineNumber = startingLineNumber;
     const result: Array<{
-      code: React.ReactNode;
+      code: any;
       type: string;
       lineNumber: number;
     }> = [];
 
     for (let i = 0; i < processedLines.length; i++) {
-      const { code, type, originalCode } = processedLines[i];
+      const processedLine = processedLines[i];
+      if (!processedLine) continue;
+
+      const { code, type, originalCode } = processedLine;
 
       // Check if this line is part of a word-diff pair
       const pair = linePairs.find((p) => p.remove === i || p.add === i);
 
       if (pair && pair.remove === i && pair.add !== undefined) {
         // This is a removed line with a corresponding added line
-        const removedText = processedLines[i].code;
-        const addedText = processedLines[pair.add].code;
+        const removedText = processedLines[i]?.code;
+        const addedLine = processedLines[pair.add];
+        if (!removedText || !addedLine) continue;
+
+        const addedText = addedLine.code;
         const wordDiff = getWordDiff(removedText, addedText);
 
         // Create word-level diff display for removed line
         const removedContent = (
-          <Text backgroundColor="removedLight">
-            <Text>-</Text>
-            {wordDiff.map((part, idx) => {
-              if (part.removed) {
-                return (
-                  <Text key={`removed-${i}-${idx}`} backgroundColor="removed">
-                    {part.value}
-                  </Text>
-                );
-              }
-              return <Text key={`unchanged-${i}-${idx}`}>{part.value}</Text>;
-            })}
-          </Text>
+          <box style={{ backgroundColor: "#ff000020" }}>
+            <text>
+              <span>-</span>
+              {wordDiff.map((part, idx) => {
+                if (part.removed) {
+                  return (
+                    <strong key={`removed-${i}-${idx}`}>{part.value}</strong>
+                  );
+                }
+                return <span key={`unchanged-${i}-${idx}`}>{part.value}</span>;
+              })}
+            </text>
+          </box>
         );
 
         result.push({ code: removedContent, type, lineNumber });
       } else if (pair && pair.add === i && pair.remove !== undefined) {
         // This is an added line with a corresponding removed line
-        const removedText = processedLines[pair.remove].code;
-        const addedText = processedLines[i].code;
+        const removedLine = processedLines[pair.remove];
+        const addedLine = processedLines[i];
+        if (!removedLine || !addedLine) continue;
+
+        const removedText = removedLine.code;
+        const addedText = addedLine.code;
         const wordDiff = getWordDiff(removedText, addedText);
 
         // Create word-level diff display for added line
         const addedContent = (
-          <Text backgroundColor="addedLight">
-            <Text>+</Text>
-            {wordDiff.map((part, idx) => {
-              if (part.added) {
-                return (
-                  <Text key={`added-${i}-${idx}`} backgroundColor="added">
-                    {part.value}
-                  </Text>
-                );
-              }
-              return <Text key={`unchanged-${i}-${idx}`}>{part.value}</Text>;
-            })}
-          </Text>
+          <box style={{ backgroundColor: "#00ff0020" }}>
+            <text>
+              <span>+</span>
+              {wordDiff.map((part, idx) => {
+                if (part.added) {
+                  return (
+                    <strong key={`added-${i}-${idx}`}>{part.value}</strong>
+                  );
+                }
+                return <span key={`unchanged-${i}-${idx}`}>{part.value}</span>;
+              })}
+            </text>
+          </box>
         );
 
         result.push({ code: addedContent, type, lineNumber });
@@ -260,14 +241,18 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
         // Regular line without word-level diff
         const content =
           type === "add" || type === "remove" ? (
-            <Text
-              backgroundColor={type === "add" ? "addedLight" : "removedLight"}
+            <box
+              style={{
+                backgroundColor: type === "add" ? "#00ff0020" : "#ff000020",
+              }}
             >
-              <Text>{type === "add" ? "+" : "-"}</Text>
-              {code}
-            </Text>
+              <text>
+                <span>{type === "add" ? "+" : "-"}</span>
+                {code}
+              </text>
+            </box>
           ) : (
-            <> {code}</>
+            <text> {code}</text>
           );
 
         result.push({ code: content, type, lineNumber });
@@ -285,10 +270,10 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
       const lineNumberText = lineNumber.toString().padStart(maxWidth);
 
       return (
-        <Text key={`line-${index}`}>
-          <Text color="secondaryText">{lineNumberText} </Text>
+        <text key={`line-${index}`}>
+          <span style={{ fg: "#999" }}>{lineNumberText} </span>
           {code}
-        </Text>
+        </text>
       );
     });
   };
@@ -297,7 +282,7 @@ const StructuredDiff = ({ patch }: { patch: Hunk }) => {
   return (
     <>
       {diff.map((line, i) => (
-        <Box key={i}>{line}</Box>
+        <box key={i}>{line}</box>
       ))}
     </>
   );
@@ -367,13 +352,13 @@ const hunks = structuredPatch(
 
 function App() {
   return (
-    <div className="min-h-screen bg-black text-neutral-100 p-8">
-      <pre className="mt-8 bg-neutral-900 whitespace-pre-wrap rounded-lg p-4 font-mono text-sm">
-        <FileEditPreviewTitle filePath={filePath} hunks={hunks} />
-        <FileEditPreview hunks={hunks} paddingLeft={0} />
-      </pre>
-    </div>
+    <box style={{ flexDirection: "column", padding: 2 }}>
+      <FileEditPreviewTitle filePath={filePath} hunks={hunks} />
+      <FileEditPreview hunks={hunks} paddingLeft={0} />
+    </box>
   );
 }
 
-render(<App />);
+await render(
+  React.createElement(ErrorBoundary, null, React.createElement(App)),
+);

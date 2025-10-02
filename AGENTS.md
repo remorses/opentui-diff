@@ -6,6 +6,13 @@ IMPORTANT! before starting every task ALWAYS read opentui docs with `curl -s htt
 
 ALWAYS!
 
+
+## bun
+
+NEVER run bun run index.tsx. You cannot directly run the tui app. it will hang. instead ask me to do so.
+
+use bun add to install packages instead of npm
+
 ## React
 
 NEVER pass function or callbacks as dependencies of useEffect, this will very easily cause infinite loops if you forget to use useCallback
@@ -16,7 +23,6 @@ Try to never use useEffect if possible. usually you can move logic directly in e
 
 ## Rules
 
-- for return type of React components just use any
 - keep types as close as possible to rayacst
 - DO NOT use as any. instead try to understand how to fix the types in other ways
 - to implement compound components like `List.Item` first define the type of List, using a interface, then use : to implement it and add compound components later using . and omitting the props types given they are already typed by the interface, here is an example
