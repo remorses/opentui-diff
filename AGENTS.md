@@ -56,4 +56,4 @@ use gitchamber to read the .md files using curl
 
 ## researching opentui patterns
 
-you can read more examples of opentui react code using gitchamber and listing and reading files in https://github.com/sst/opentui/tree/main/packages/react/examples
+you can read more examples of opentui react code using gitchamber by listing and reading files from the correct endpoint: https://gitchamber.com/repos/sst/opentui/main/files?glob=packages/react/examples/**
